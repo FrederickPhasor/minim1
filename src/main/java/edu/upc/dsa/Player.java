@@ -1,56 +1,50 @@
 package edu.upc.dsa;
-
 import java.util.ArrayList;
-import java.util.List;
-
-public class Player implements  Comparable<Player>{
-    private String id;
-    private int points;
-    private Game currentGame = null;
-    ArrayList<Game> playedGames = new ArrayList<Game>();
-    private int currentLevel = 0;
-    public String getId(){
-        return id;
+import java.util.Objects;
+public class Player {
+    public String getId(){ return id; }
+    public String getName(){return name;}
+    public boolean isInMatch(){
+        return currentMatch != null;
     }
-    public int getPoints(){
-        return points;
-    }
-    public void setPoints(int points){
-        this.points = points;
-    }
-    public void addPoints(int amount){
-        points += amount;
-    }
-    public boolean isInGame(){
-        return currentGame != null;
-    }
-    public Player(String id){
+    public Player(String id, String name){
         this.id = id;
+        this.name = name;
     }
-    public int getCurrentLevel(){
-        return currentLevel;
+    private final String id;
+    private final String name;
+    private Match currentMatch = null;
+    private final ArrayList<MatchRecord> matchesRegister = new ArrayList<MatchRecord>();
+
+    public Match getCurrentMatch(){
+        return currentMatch;
     }
-    public Game getCurrentGame(){
-        return currentGame;
+    public void setCurrentMatch(Match currentGame){
+        this.currentMatch = currentGame;
     }
-    public void levelUp(){
-        currentLevel++;
+    public void endMatch(){
+        MatchRecord newRecord = new MatchRecord(id,currentMatch.getCurrentScore(),currentMatch.getGameId(),currentMatch.getDate());
+        matchesRegister.add(newRecord);
+        currentMatch = null;
     }
-    public void setCurrentLevel(int level){
-        currentLevel = level;
+    public ArrayList<MatchRecord> getMatchesRegisterFromGame(String gameId){
+        ArrayList<MatchRecord> result = new ArrayList<MatchRecord>();
+        if(!hasPlayed(gameId))
+            return null;
+        for (MatchRecord r:matchesRegister) {
+            if(Objects.equals(r.getGameId(), gameId))
+                result.add(r);
+        }
+        return result;
     }
-    public void setCurrentGame(Game currentGame){
-        this.currentGame = currentGame;
-        currentGame.registerPlayer(this);
-    }
-    public void endGame(){
-        currentGame = null;
-    }
-    public ArrayList<Game> getPlayedGames(){
-        return playedGames;
-    }
-    @Override
-    public int compareTo(Player o) {
-        return Double.compare(this.points,o.points);
+
+    private boolean hasPlayed(String gameId){
+        // Check if we have register of this game in our matches.
+        for (MatchRecord r:matchesRegister) {
+            if(r.getGameId().equals(gameId)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

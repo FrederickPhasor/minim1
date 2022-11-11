@@ -2,10 +2,7 @@ package edu.upc.dsa;
 
 import org.apache.log4j.Logger;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Hashtable;
-import java.util.List;
+import java.util.*;
 
 public class GameManagerImplementation implements  IGameManager {
     private static IGameManager Instance;
@@ -15,64 +12,60 @@ public class GameManagerImplementation implements  IGameManager {
             Instance = new GameManagerImplementation();
         return Instance;
     }
-    Hashtable<String, Game> availableGames = new Hashtable<String,Game>();
+    Hashtable<String, VideoGame> createdVideoGames = new Hashtable<String, VideoGame>();
     Hashtable<String, Player> players = new Hashtable<String,Player>();
 
     @Override
-    public void createPlayer(String id) {
+    public void createPlayer(String id, String name) {
     logger.info("Creating player, current players count : " + players.size());
-        Player newPlayer = new Player(id);
+        Player newPlayer = new Player(id,name);
         if(doesPlayerExists(id)){
             logger.error("This Player Already Exists!");
             return;
         }
         players.put(id,newPlayer);
         logger.info("Player was created, number of players now :  " + players.size());
-
     }
-
     @Override
     public void createGame(String id, String description, int levelsAmount) {
-        logger.info("Creating game, current games count : " + availableGames.size());
-        if(availableGames.contains(id))
+        logger.info("Creating game, current games count : " + createdVideoGames.size());
+        if(createdVideoGames.contains(id))
         {
-            logger.error("There is already a game with this same id : " + id);
+            logger.warn("There is already a game with this same id : " + id);
             return;
         }
-        Game newGame = new Game(id,description,levelsAmount);
-        availableGames.put(id,newGame);
-        logger.info("Game Created, current games count : " + availableGames.size());
+        VideoGame newVideoGame = new VideoGame(id,description,levelsAmount);
+        createdVideoGames.put(id, newVideoGame);
+        logger.info("Game Created, current games count : " + createdVideoGames.size());
     }
 
     @Override
-    public void startGame(String gameID, String playerID) {
-        if(!doesGameExists(gameID)){
-            logger.error("The Game Requested Does Not Exist.");
-            return;
-        }
-        if(!doesPlayerExists(playerID)){
+    public void startMatch(String gameId, String playerId, String date) {
+        if(!doesVideoGameExist(gameId)){
             logger.error("This Player Does Not Exist");
             return;
         }
-        Game requestedGame = availableGames.get(gameID);
-        Player player = players.get(playerID);
-
-        if(player.isInGame()){
-            logger.error("Player is already in a game. Finish the current game first.");
+        if(!doesPlayerExists(playerId)){
+            logger.error("The Game Requested Does Not Exist.");
             return;
         }
-        logger.info("Starting game on player with id : " + playerID + " isThisPlayerInGame? : " + player.isInGame());
-        player.setCurrentGame(requestedGame);
-        player.setCurrentLevel(0);
-        player.setPoints(50);
-        logger.info("Game started on player with id : " + playerID + " isThisPlayerInGame? : " + player.isInGame());
+        Player player = players.get(playerId);
+        if(player.isInMatch()){
+            logger.error("Player with id : "+ playerId+ "is already in a game. Finish the current game first.");
+            return;
+        }
+        Match newMatch = new Match(playerId,gameId ,1,date);
+        logger.info("Starting game on player with id : " + playerId + " isThisPlayerInGame? : " + player.isInMatch());
+        newMatch.setScore(50);
+        player.setCurrentMatch(newMatch);
+        logger.info("Game started on player with id : " + playerId + " isThisPlayerInGame? : " + player.isInMatch());
 
     }
     private boolean doesPlayerExists(String id){
-        return players.get(id) != null;
+        return players.containsKey(id);
     }
-    private boolean doesGameExists(String id){
-         return availableGames.get(id) != null;
+    private boolean doesVideoGameExist(String id){
+         return createdVideoGames.containsKey(id);
     }
 
     @Override
@@ -82,12 +75,19 @@ public class GameManagerImplementation implements  IGameManager {
             return -1;
         }
         Player requestedPlayer  = players.get(playerID);
-        if(!requestedPlayer.isInGame()){
-            logger.error("Player is not currently in a game, can not check current level");
+        if(!requestedPlayer.isInMatch()){
+            logger.error("Player is not currently in a match, can not check current level of non-existing match");
             return -1;
         }
-        return requestedPlayer.getCurrentLevel();
-
+        Match currentMatch = requestedPlayer.getCurrentMatch();
+        int currentLevel =  currentMatch.getCurrentLevel();
+        int totalLevels = createdVideoGames.get(currentMatch.getGameId()).getLevelsAmount();
+        logger.info("Player with id : " + requestedPlayer.getId()
+                + " is playing a game with id : "
+                + currentMatch.getGameId()
+                + " and its at level : "
+                + currentLevel + "/"+totalLevels);
+        return currentLevel;
     }
 
     @Override
@@ -97,11 +97,17 @@ public class GameManagerImplementation implements  IGameManager {
             return -1;
         }
         Player requestedPlayer  = players.get(playerID);
-        if(!requestedPlayer.isInGame()){
+        if(!requestedPlayer.isInMatch()){
             logger.error("Player is not currently in a game, can not check current score");
             return -1;
         }
-        return requestedPlayer.getPoints();
+        Match playerCurrentMatch = requestedPlayer.getCurrentMatch();
+        int currentScore = playerCurrentMatch.getCurrentScore();
+        logger.info("Player with id : " + playerID
+                + " is playing a game with id : "
+                + playerCurrentMatch.getGameId() +
+                " and with a score of : " + currentScore);
+        return currentScore;
     }
 
     @Override
@@ -112,72 +118,102 @@ public class GameManagerImplementation implements  IGameManager {
             return;
         }
         Player requestedPlayer  = players.get(playerID);
-        if(!requestedPlayer.isInGame()){
-            logger.error("Player is not currently in a game");
+        if(!requestedPlayer.isInMatch()){
+            logger.error("Player with id: " + playerID + "is not currently in a match");
             return;
         }
-        Game requestedGame = requestedPlayer.getCurrentGame();
-        logger.info("Leveling up player, , current level/points : "+requestedPlayer.getCurrentLevel() + "/"+ requestedPlayer.getPoints());
-        requestedPlayer.addPoints(rewardPoints);
-        requestedPlayer.levelUp();
-        if(requestedPlayer.getCurrentLevel() >= requestedPlayer.getCurrentGame().getLevelsAmount()){
-            requestedPlayer.addPoints(100);
-            endGameOfPlayer(playerID);
+        Match currentMatch = requestedPlayer.getCurrentMatch();
+        logger.info("Leveling up player, , current level/points : "+currentMatch.getCurrentLevel() + "/"+ currentMatch.getCurrentScore());
+        currentMatch.addScore(rewardPoints);
+        currentMatch.levelUp();
+        currentMatch.updateDate(ddmmyyyy);
+        int totalLevels = createdVideoGames.get(currentMatch.getGameId()).getLevelsAmount();
+        if(currentMatch.getCurrentLevel() >= totalLevels){
+            currentMatch.addScore(100);
+            endMatchOfPlayer(playerID);
+            logger.info("Player with id : " + playerID
+                    +" has finished game with id :"
+                    + currentMatch.getGameId()
+                    + " with a score of : "
+                    + currentMatch.getCurrentScore());
         }
-        logger.info("Leveling up player, current level/points : "+requestedPlayer.getCurrentLevel() + "/"+ requestedPlayer.getPoints());
+        logger.info("Updated level : "+ currentMatch.getCurrentLevel() + "/"+ totalLevels);
     }
 
     @Override
-    public void endGameOfPlayer(String playerID) {
+    public void endMatchOfPlayer(String playerID) {
         if(!doesPlayerExists(playerID)){
             logger.error("Player Does Not Exist");
             return;
         }
-        Player requestedPlayer  = players.get(playerID);
-        if(!requestedPlayer.isInGame()){
+        Player player  = players.get(playerID);
+        if(!player.isInMatch()){
             logger.error("Player is not currently in a game");
             return;
         }
-        requestedPlayer.endGame();
+        Match currentMatch = player.getCurrentMatch();
+        VideoGame videoGamePlayed = createdVideoGames.get(currentMatch.getGameId());
+        videoGamePlayed.RegisterRecord(playerID, currentMatch.getCurrentScore(), currentMatch.getGameId(), currentMatch.getDate());
+        player.endMatch();
+        logger.info("Player with id : "
+                + playerID
+                + " finished match of game with id : " + videoGamePlayed.getID()+ " with : "
+                + currentMatch.getCurrentScore()
+                +" points");
     }
-
     @Override
-    public List<Player> getInvolvedPlayersInGameSortedByScore(String gameID) {
-        if(!doesGameExists(gameID)){
+    public ArrayList<String> getInvolvedPlayersInGameSortedByScore(String gameId) {
+        ArrayList<String> sortedByScorePlayersOfGameNames = new ArrayList<>();
+        if(doesVideoGameExist(gameId)){
             logger.error("Game Does Not Exist");
             return null;
         }
-        List<Player> nonSortedList =new ArrayList<Player>(players.values());
+        VideoGame requestedVideoGame = createdVideoGames.get(gameId);
+        ArrayList<MatchRecord> nonSortedList =new ArrayList<MatchRecord>(requestedVideoGame.records.values());
         Collections.sort(nonSortedList);
-        return nonSortedList;
+        for (MatchRecord r: nonSortedList) {
+            String playerName = players.get(r.getPlayerId()).getName();
+            sortedByScorePlayersOfGameNames.add(playerName);
+        }
+        return sortedByScorePlayersOfGameNames;
     }
 
     @Override
-    public List<Game> getGamesPlayedByPlayer(String playerID) {
-        if(!doesPlayerExists(playerID)){
-            logger.error("Player Does Not Exist");
+    public ArrayList<MatchRecord> getMatchesDoneByPlayerInGame(String playerId,String gameId) {
+        if(!doesPlayerExists(playerId)){
+            logger.warn("Player Does Not Exist");
             return null;
         }
-        Player requestedPLayer = players.get(playerID);
-        return requestedPLayer.getPlayedGames();
-
+        if(!doesVideoGameExist(gameId)){
+            logger.error("Game Does Not Exist");
+            return null;
+        }
+        Player requestedPLayer = players.get(playerId);
+        ArrayList<MatchRecord> result =requestedPLayer.getMatchesRegisterFromGame(gameId);
+        if(result == null){
+            logger.warn("This player has not played any matches of : " + gameId);
+        }
+        return result;
     }
     public int getAmountOfGames(){
-        return availableGames.size();
+        return createdVideoGames.size();
     }
-    public boolean isPlayerInGame(String playerID, String gameID){
-        if(!doesGameExists(gameID)){
+    public boolean isPlayerInMatchOfGame(String playerId, String gameId){
+        if(!doesVideoGameExist(gameId)){
+            logger.error("Game with id : " + gameId + "does not exist.");
             return false;
         }
-        if(!doesPlayerExists(playerID)){
+        if(!doesPlayerExists(playerId)){
+            logger.error("Player with id : " + playerId + "does not exist.");
             return false;
         }
-        return players.get(playerID).getCurrentGame().getID() == availableGames.get(gameID).getID();
+        return Objects.equals(players.get(playerId).getCurrentMatch().getGameId(), createdVideoGames.get(gameId).getID());
     }
-    public boolean isPlayerInAnyGame(String playerID){
-        if(!doesPlayerExists(playerID)){
+    public boolean isPlayerInAnyMatch(String playerId){
+        if(!doesPlayerExists(playerId)){
+            logger.error("Player with id : " + playerId + "does not exist.");
             return false;
         }
-        return players.get(playerID).isInGame();
+        return players.get(playerId).isInMatch();
     }
 }
