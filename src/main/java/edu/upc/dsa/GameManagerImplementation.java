@@ -216,4 +216,9 @@ public class GameManagerImplementation implements  IGameManager {
         }
         return players.get(playerId).isInMatch();
     }
+    public VideoGame getGame(String id)
+    {
+        return createdVideoGames.get(id);
+    }
+
 }
