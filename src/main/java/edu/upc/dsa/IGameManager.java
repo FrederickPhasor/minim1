@@ -3,6 +3,9 @@ import java.util.ArrayList;
 
 public interface IGameManager {
     public void createPlayer(String id, String playerName);
+    public Player getPlayer(String id);
+    public VideoGame getGame(String id);
+
     public void createGame(String id, String description, int levelsAmount);
     public void startMatch(String gameId, String playerId, String date);
     public int getPlayerLevel(String playerID);
@@ -11,4 +14,5 @@ public interface IGameManager {
     public void endMatchOfPlayer(String playerID);
     public ArrayList<String> getInvolvedPlayersInGameSortedByScore(String gameId);
     public ArrayList<MatchRecord> getMatchesDoneByPlayerInGame(String playerID,String gameId);
+
 }
