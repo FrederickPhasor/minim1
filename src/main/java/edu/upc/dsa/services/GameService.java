@@ -8,7 +8,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.GenericEntity;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
-<<<<<<< HEAD
 import java.util.List;
 
 @Api(value = "/GamePetitions")
@@ -16,27 +15,30 @@ import java.util.List;
 public class GameService {
 
     private IGameManager gameManager;
-    public GameService(){
+
+    public GameService() {
         this.gameManager = GameManagerImplementation.getInstance();
-        gameManager.createGame("0","A game about killing plants",4);
-        gameManager.createGame("1","A game where you are a plant running away from plant killers",4);
+        gameManager.createGame("0", "A game about killing plants", 4);
+        gameManager.createGame("1", "A game where you are a plant running away from plant killers", 4);
     }
+
     @POST
     @ApiOperation(value = "Create a videogame", notes = "The Funnier the game the better!")
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful", response= VideoGameDTO.class),
+            @ApiResponse(code = 201, message = "Successful", response = VideoGameDTO.class),
             @ApiResponse(code = 500, message = "Validation Error")
     })
     @Path("/Create VideoGame")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response createVideoGame(VideoGameDTO received) {
-        gameManager.createGame(received.id,received.description,received.levelsAmount);
+        gameManager.createGame(received.id, received.description, received.levelsAmount);
         return Response.status(201).entity(received).build();
     }
+
     @POST
     @ApiOperation(value = "Create a Match", notes = "Play your favorite game!")
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful", response= Match.class),
+            @ApiResponse(code = 201, message = "Successful", response = Match.class),
             @ApiResponse(code = 500, message = "Validation Error")
     })
     @Path("/Start a Match")
@@ -44,16 +46,17 @@ public class GameService {
     public Response newTrack(Match createdMatch) {
         return Response.status(201).entity(createdMatch).build();
     }
+
     @POST
     @ApiOperation(value = "Create a player")
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful", response= Player.class),
+            @ApiResponse(code = 201, message = "Successful", response = Player.class),
             @ApiResponse(code = 500, message = "Validation Error")
     })
     @Path("/Create Player")
     @Consumes(MediaType.APPLICATION_JSON)
     public Response createVideoGame(Player received) {
-        gameManager.createPlayer(received.getId(),received.getName());
+        gameManager.createPlayer(received.getId(), received.getName());
         return Response.status(201).entity(received).build();
     }
 
@@ -64,6 +67,7 @@ public class GameService {
 
         return "" + gameManager.getPlayerScore(id);
     }
+
     @Path("/Get Current Level/{playerId}")
     @GET
     @Produces(MediaType.TEXT_PLAIN)
@@ -71,6 +75,7 @@ public class GameService {
 
         return "" + gameManager.getPlayerLevel(id);
     }
+
     @DELETE
     @ApiOperation(value = "End Game", notes = "asdasd")
     @ApiResponses(value = {
@@ -86,26 +91,16 @@ public class GameService {
     @GET
     @ApiOperation(value = "Get Involved Players In Game Sorted By Score", notes = "asdasd")
     @ApiResponses(value = {
-            @ApiResponse(code = 201, message = "Successful",responseContainer = "List"),
+            @ApiResponse(code = 201, message = "Successful", responseContainer = "List"),
             @ApiResponse(code = 404, message = "Track not found")
     })
     @Path("/involvedPlayers/{gameId}")
     @Produces(MediaType.APPLICATION_JSON)
     public Response getInvolvedPlayersSortedByScore(@PathParam("gameId") String gameId) {
         List<String> results = gameManager.getInvolvedPlayersInGameSortedByScore(gameId);
-        GenericEntity<List<String>> result = new GenericEntity<List<String>>(results){};
+        GenericEntity<List<String>> result = new GenericEntity<List<String>>(results) {
+        };
         return Response.status(201).entity(result).build();
 
     }
-=======
-import io.swagger.annotations.Api;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-public class GameService {
-
->>>>>>> 3435548cc527752145bb45edf726d19442ad1aec
-
 }
