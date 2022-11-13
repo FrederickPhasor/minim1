@@ -163,19 +163,19 @@ public class GameManagerImplementation implements  IGameManager {
     }
     @Override
     public ArrayList<String> getInvolvedPlayersInGameSortedByScore(String gameId) {
-        ArrayList<String> sortedByScorePlayersOfGameNames = new ArrayList<>();
+        ArrayList<String> playerNamesSortedList = new ArrayList<>();
         if(doesVideoGameExist(gameId)){
             logger.error("Game Does Not Exist");
             return null;
         }
-        VideoGame requestedVideoGame = createdVideoGames.get(gameId);
-        ArrayList<MatchRecord> nonSortedList =new ArrayList<MatchRecord>(requestedVideoGame.records.values());
-        Collections.sort(nonSortedList);
-        for (MatchRecord r: nonSortedList) {
+        VideoGame videoGameData = createdVideoGames.get(gameId);
+        ArrayList<MatchRecord> playerNamesNonSortedList =new ArrayList<MatchRecord>(videoGameData.records.values());
+        Collections.sort(playerNamesNonSortedList);
+        for (MatchRecord r: playerNamesNonSortedList) {
             String playerName = players.get(r.getPlayerId()).getName();
-            sortedByScorePlayersOfGameNames.add(playerName);
+            playerNamesSortedList.add(playerName);
         }
-        return sortedByScorePlayersOfGameNames;
+        return playerNamesSortedList;
     }
 
     @Override
@@ -220,5 +220,5 @@ public class GameManagerImplementation implements  IGameManager {
     {
         return createdVideoGames.get(id);
     }
-
+    public Player getPlayer(String id){return players.get(id);}
 }
